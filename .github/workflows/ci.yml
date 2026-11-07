@@ -1,0 +1,29 @@
+name: FRIDGE CI
+on: [push, pull_request]
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: core } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: rustfmt, clippy }
+      - run: cargo fmt --check
+      - run: cargo clippy -- -D warnings
+      - run: cargo test --verbose
+
+  extension:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: editors/vscode } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install
+      - run: npm run compile
+      - run: npx vsce package --allow-missing-repository --skip-license
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fridge-language-support-vsix
+          path: editors/vscode/*.vsix
